@@ -5,25 +5,25 @@ tensor_prod := function(u,v,w)
 // return the tensor product of u,v,w of dim n as an n x n x n array 
 //assume the input vectors are array of coefficients with respect to the canonical basis of F_q^n
 	tsr := Matrix(F,n,1,v)*Transpose(Matrix(F,n,1,w)); //tested and works 
-	tsr;
+	//tsr;
 	lst:=[* *];
 	for i in [1..n] do
-		"u[i]:";
-		u[i];
-		"tsr:";
-		tsr;
+		//"u[i]:";
+		//u[i];
+		//"tsr:";
+		//tsr;
 		mat:=ScalarMatrix(F,n,u[i]);
 		el:= [* mat*tsr *]; // u_i multiplies each element of tsr
-		"element is:";
-		el;
+		//"element is:";
+		//el;
 		lst := lst cat el;
 	end for;
-	"final tensor product";
-	lst;
-	//output := tsr*Transpose(Matrix(F,n,1,w));
-	return 0; //output;
+	//"final tensor product";
+	//lst;
+	return lst; 
 end function;
 
+//testing
 u:=[1,2,3];
 v:=[4,5,6];
 w:=[7,8,9];
