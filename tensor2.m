@@ -60,7 +60,7 @@ GACE := function(A,B,C,b)
 	return sum;
 end function;
 
-JouxAction := function(A,B,C)
+JouxAction := function(A,B,C) // updated version that matches with GACE
 	basis:=identity(n,P);
 	sum:=0;
 	for s in [1..n] do
@@ -100,7 +100,8 @@ end function;
 
 keygen := function()
 // chooses random secret key values, and computes the corresponding public key
-	b := Random(1);
+	//b := Random(1);
+	b := 0;
 	A := InvMatrix(n);
 	B := InvMatrix(n);
 	C := InvMatrix(n);
@@ -126,7 +127,6 @@ GrobnerAttack := function(pk,b,fake_comp)
 	end for;
 	// which monomial ordering should we be using?
 	H := Ideal(ideal);
-	H;
 	solns := Variety(H); // solve the equations using a Gröbner basis
 	#solns; 
 	return solns;
@@ -135,12 +135,21 @@ end function;
 
 A,B,C,b,pk := keygen();
 D := Matrix(n,[X[i]:i in [(2*n^2 + 1)..(3*n^2)]]);
-fake_comp := GACE(A,B,D*C,b);
-//"keys";
-//A; B; C; b; pk;
-//x:=GACE(A,B,C,0);
-//y:=JouxAction(A,B,C);
-//x eq y; 
+fake_comp := GACE(A,B,D*C,b); // public key times variables we are looking for in C
 //"solutions";
-GrobnerAttack(pk,b,fake_comp); // for now we assume the correct commitment
+B := GrobnerAttack(pk,b,fake_comp); // for now we assume the correct commitment
 // need to check later what happens when using the wrong commitment
+
+InLattice := function(B,pk) // checks if pk is in the lattice spanned by the tuples in B
+// currently doesn't work, we get the error "ring is not a subring of the real field"
+	sequence := [];
+	for i in [2..#B] do // make solution space into matrix, then into lattice to check if pk is in it
+		for j in [1..#B[i]] do 
+			sequence := sequence cat [F!B[i][j]];
+		end for;
+	end for;
+	M := Matrix(3*n^2,#B-1,sequence);
+	L := LatticeWithBasis(M);
+	p := [F!pk[i][1] : i in [1..n^3]]; // convert public key into a vector in the same parent as the lattice
+	return p in L;
+end function; 
