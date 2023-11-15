@@ -1,6 +1,6 @@
 clear; 
 
-n := 4;
+n := 2;
 q := 11;
 F := FiniteField(q);
 vars_num := 3*n^2; // can put this later in attack function
@@ -65,7 +65,7 @@ star := function(A,B,C,elt)
 // not sure how this is done in the real world
 // but the paper assumes it can be done, so we will assume the same
 // !!!!!!!!!!!!! for now we assume the structure of the GACE but this should be generalized later !!!!!!!!!!!!!!!!!!!!!!
-	action := GACE(A,B,C,1); // compute \Sigma A*e_i \otimes B*e_i \otimes C_e_i
+	action := GACE(A,B,C,0); // compute \Sigma A*e_i \otimes B*e_i \otimes C_e_i
 	for i in [1..n^3] do 
 		action[i] := action[i]*elt[i]; // scalar multiply relevant coefficients from input class group
 	end for;
@@ -117,12 +117,8 @@ GrobnerAttack := function(pk,b)
 	C := Matrix(n,[X[i]:i in [(2*n^2 + 1)..(3*n^2)]]);
 	I := identity(n,P); // make identity matrix
 	// LHS := pk; RHS := JouxAction(A,B,C);
-	LHS := JouxAction(A,B,I); 
-	RHS:=JouxAction(I,I,C);
-	//RHS := pk; // Joux(A,B,C) = pk
-	for c in [1..n^3] do 
-		RHS[c]:=pk[c]*RHS[c];
-	end for;
+	LHS := GACE(A,B,I,0); 
+	RHS:= star(I,I,C,pk);
  	// we will build an ideal with all the equations we want to solve
 	ideal := [];
 	for s in [1..n^3] do 
@@ -136,7 +132,6 @@ GrobnerAttack := function(pk,b)
 	// which monomial ordering should we be using?
 	SetVerbose("Groebner",0);
 	H := Ideal(ideal);
-	H;
 	solns := Variety(H); // solve the equations using a Gröbner basis
 	"Number of solutions found:";
 	#solns; 
@@ -144,47 +139,14 @@ GrobnerAttack := function(pk,b)
 	return solns;
 end function;
 
-tester := function()
-	P<[X]> := PolynomialRing(F,4); // define a polynomial ring for unknown values
-	gens := <X[i] : i in [1..4]>;
-	eqs := [X[1]*X[2]*X[3]+X[4]*X[3]*X[1]-3, X[4]*X[2]*X[1]-4, X[1]^q-X[1],X[2]^q-X[2],X[3]^q-X[3],X[4]^q-X[4]];
-	H := Ideal(eqs);
-	H;
-	solns := Variety(H);
-	return solns;
-end function;
-
-tester2 := function(A,B,C,pk)
-	Ax := A;
-	Bx := B;
-	Cx := C;
-	for i in [1..n] do 
-		for j in [1..n] do 
-			if Ax[i][j] ne 0 then 
-				Ax[i][j] := P!((GF(q)!A[i][j])^(-1));
-			end if;
-			if Bx[i][j] ne 0 then 
-				Bx[i][j] := P!((GF(q)!B[i][j])^(-1));
-			end if;
-			if Cx[i][j] ne 0 then 
-				Cx[i][j] := P!((GF(q)!C[i][j])^(-1));
-			end if;
-		end for;
-	end for;
-	J := JouxAction(Ax,Bx,Cx);
-	for i in [1..n^3] do 
-		J[i] := J[i]*pk[i];
-	end for;
-	return J;
-end function;
-
-A,B,C,b,pk := keygen();
-"KeyGen is done. The keys are:";
+A,B,C,b,pk := keygen(); // for now b is always 0
+"KeyGen is done.";
 //A; B; C; b; pk;
 
 
 "Starting the attack.";
 GrobnerAttack(pk,b); // for now we assume the correct commitment
 // need to check later what happens when using the wrong commitment
+
 
 
