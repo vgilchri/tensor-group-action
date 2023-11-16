@@ -1,7 +1,7 @@
 clear; 
 
 n:= 2;
-q := 41;
+q := 3;
 F := FiniteField(q);
 vars_num := 3*n^2; // can put this later in attack function
 P<[X]>:=PolynomialRing(F,vars_num); // define a polynomial ring for unknown values
@@ -113,22 +113,25 @@ GrobnerAttack := function(pk,b,fake_comp)
 // given an instance of GACE, we will determine one or two possible secret keys
 // we use the public key, and its known structure, to set up a system of equations to be solved
 // we then solve it using Grobner
-	A := Matrix(n,[X[i]:i in [1..n^2]]); // fill the matrices with our unknowns
+	A := Matrix(n,[X[i]:i in [1..n^2]]); // fill the matrices with our unknown variables
 	B := Matrix(n,[X[i]:i in [(n^2 + 1)..(2*n^2)]]);
-
+	C := Matrix(n,[X[i]:i in [(2*n^2 + 1)..(3*n^2)]]);
 	I := identity(n,P); // make identity matrix
-	LHS := GACE(A,B,I,b);
-	RHS := fake_comp;//star(I,I,C,pk);
+	LHS := GACE(A,B,I,b); // create the equations from Christophe's email
+	RHS := fake_comp; // for now we use secret knowledge to compute the group action, should fix later
 	ideal :=[]; // we will build an ideal with all the equations we want to solve
-	for s in [1..n^3] do 
+	for s in [1..n^3] do // make a list of all the equations
 		eqn := LHS[s][1] - RHS[s][1];
 		ideal := Append(ideal,eqn);
-		ideal := Append(ideal,X[s]^2-X[s]);
+		if s le vars_num then 
+			ideal := Append(ideal,X[s]^q-X[s]); // include field equations
+		end if;
 	end for;
-	// which monomial ordering should we be using?
-	H := Ideal(ideal);
-	solns := Variety(H); // solve the equations using a Gröbner basis
-	#solns; 
+	ideal := Append(ideal,Determinant(A) - 1); // we add equations to ensure Determinant(A) = 1, same for C
+	ideal := Append(ideal,Determinant(C) - 1); // (we do this in order to normalize / avoid multiplication by a scalar)
+
+	H := Ideal(ideal); // make the equations into an ideal
+	solns := Variety(H); // solve the equations using built-in Magma functions
 	return solns;
 end function;
 
@@ -137,19 +140,15 @@ A,B,C,b,pk := keygen();
 D := Matrix(n,[X[i]:i in [(2*n^2 + 1)..(3*n^2)]]);
 fake_comp := GACE(A,B,D*C,b); // public key times variables we are looking for in C
 //"solutions";
-B := GrobnerAttack(pk,b,fake_comp); // for now we assume the correct commitment
+S := GrobnerAttack(pk,b,fake_comp); // for now we assume the correct commitment
 // need to check later what happens when using the wrong commitment
+"public key matrices:";
+A; B; C;
+"size of solution set:";
+#S;
+//"solution set:";
+//S;
 
-InLattice := function(B,pk) // checks if pk is in the lattice spanned by the tuples in B
-// currently doesn't work, we get the error "ring is not a subring of the real field"
-	sequence := [];
-	for i in [2..#B] do // make solution space into matrix, then into lattice to check if pk is in it
-		for j in [1..#B[i]] do 
-			sequence := sequence cat [F!B[i][j]];
-		end for;
-	end for;
-	M := Matrix(3*n^2,#B-1,sequence);
-	L := LatticeWithBasis(M);
-	p := [F!pk[i][1] : i in [1..n^3]]; // convert public key into a vector in the same parent as the lattice
-	return p in L;
-end function; 
+// Open questions:
+// -> why always same number of solutions? Maybe example too small?
+
