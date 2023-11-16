@@ -151,4 +151,10 @@ A; B; C;
 
 // Open questions:
 // -> why always same number of solutions? Maybe example too small?
+// -> why can we scale the determinants of the matrices? 
+// 		- in the 2x2 case, I was looking at which solution corresponds to the pk
+//		  and i don't get why we can scale the determinant. Say we are working 
+//		  in F_3, and the determinant of A is 2. Here, to get the determinant of
+// 		  A to be 1, we need to multiply A by the square root of 2, but 2 has no
+// 		  square roots mod 3.
 
