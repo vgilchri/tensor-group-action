@@ -133,7 +133,7 @@ GrobnerAttack := function(pk,b,fake_comp)
 	//for j in [1..n] do
 	    //for k in [1..n] do  
 	        //for s in [1..n] do
-	            //eqn:=eqn +A[i][s]*B[j][s]*C[k][s];
+	            //eqn:=eqn +A[i][s]*B[j][s]*C[k][s]; //should it be C here ? or D ? might have to get a right implementation of fakecomp before being able to implement that properly.
 	       //end for;
 		// //if all indexes are equal sum must be 1 o.w. it is 0 
         	//if (i eq j) and (j eq k) then 
