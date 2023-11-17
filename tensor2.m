@@ -137,8 +137,8 @@ GrobnerAttack := function(pk,b,fake_comp)
 	       //end for;
 		// //if all indexes are equal sum must be 1 o.w. it is 0 
         	//if (i eq j) and (j eq k) then 
-           		 eqn:=eqn-1;
-        		end if;
+           		// eqn:=eqn-1;
+        		//end if;
 	    //eqn;
 	    //ideal:=Append(ideal,eqn-1);
 	    //end for;
