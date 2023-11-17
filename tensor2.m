@@ -127,6 +127,19 @@ GrobnerAttack := function(pk,b,fake_comp)
 			ideal := Append(ideal,X[s]^q-X[s]); // include field equations
 		end if;
 	end for;
+ 	// // add constraint on leaving t_b invariant - gets number of solutions down to zero lol :
+	//eqn:=0;
+	//for i in [1..n] do
+	//for j in [1..n] do
+	    //for k in [1..n] do  
+	        //for s in [1..n] do
+	            //eqn:=eqn +A[i][s]*B[j][s]*C[k][s];
+	       // end for;
+	    //eqn;
+	    //ideal:=Append(ideal,eqn-1);
+	    //end for;
+	    //end for;
+	    //end for;
 	ideal := Append(ideal,Determinant(A) - 1); // we add equations to ensure Determinant(A) = 1, same for C
 	ideal := Append(ideal,Determinant(C) - 1); // (we do this in order to normalize / avoid multiplication by a scalar)
 
