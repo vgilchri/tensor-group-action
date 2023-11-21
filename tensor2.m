@@ -153,6 +153,25 @@ GrobnerAttack := function(pk,b,fake_comp)
 end function;
 
 
+check_inv:=function(M,n,b)
+//potential invariant matrix M 
+I:=identity(n,P);
+t_b:=GACE(I,I,I,b);
+"t_b";
+t_b;
+inv:= GACE(M,M,M,b); // this is not equal to t_b :/ 
+"inv";
+inv;
+return inv eq t_b;
+end function;
+
+
+//Some reality checks for invariance 
+M:=Matrix(2,2,[P!0,P!1,P!1,P!0]);
+"check invariance";
+check_inv(M,n,0); // this is equal to t_b only when b=0 -> does it make sense ?
+
+
 A,B,C,b,pk := keygen();
 D := Matrix(n,[X[i]:i in [(2*n^2 + 1)..(3*n^2)]]);
 fake_comp := GACE(A,B,D*C,b); // public key times variables we are looking for in C
