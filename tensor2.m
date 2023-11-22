@@ -1,7 +1,7 @@
 clear; 
 
-n:= 2;
-q := 3;
+n:= 3;
+q := 5;
 F := FiniteField(q);
 vars_num := 3*n^2; // can put this later in attack function
 P<[X]>:=PolynomialRing(F,vars_num); // define a polynomial ring for unknown values
@@ -144,8 +144,12 @@ GrobnerAttack := function(pk,b,fake_comp)
 	    //end for;
 	    //end for;
 	    //end for;
-	ideal := Append(ideal,Determinant(A) - 1); // we add equations to ensure Determinant(A) = 1, same for C
-	ideal := Append(ideal,Determinant(C) - 1); // (we do this in order to normalize / avoid multiplication by a scalar)
+	if Xgcd(n,q-1) eq 1 then // this only works if/when there are n^th roots
+		ideal := Append(ideal,Determinant(A) - 1); // we add equations to ensure Determinant(A) = 1, same for C
+		ideal := Append(ideal,Determinant(C) - 1); // (we do this in order to normalize / avoid multiplication by a scalar)
+	else // if there aren't n^th roots, we have to use one of each coset representative to guess determinant
+		"no n^th roots, need to add coset reps";
+	end if; // this only works if/when there are n^th roots
 
 	H := Ideal(ideal); // make the equations into an ideal
 	solns := Variety(H); // solve the equations using built-in Magma functions
