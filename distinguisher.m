@@ -133,8 +133,8 @@ JouxAction := function(A,B,C)
 	return sum; 
 end function;
 
-JouxAction_NEW := function(A,B,C)
-	basis:=identity(n,P);
+JouxAction_NEW := function(A,B,C,b)
+	//basis:=identity(n,P);
 	sum:=0;
     lst:=[**]; // empty list 
 	for i in [1..n] do
@@ -144,7 +144,7 @@ JouxAction_NEW := function(A,B,C)
         //ej := Matrix(n,1,basis[j]);
             for k in [1..n] do
                 sum:=0;
-                for s in [1..n] do //changing order of the s sum doesn't change input 
+                for s in [1..(n-b)] do //changing order of the s sum doesn't change input 
                     //ek := Matrix(n,1,basis[k]);
                     coeff:=A[i][s]*B[j][s]*C[k][s];
                     //"Coeff";
@@ -175,8 +175,8 @@ A;
 B;
 C;
 
-JouxAction(A,B,C);
-JouxAction_NEW(A,B,C);
+//JouxAction(A,B,C);
+//JouxAction_NEW(A,B,C,0);
 
 
 
@@ -232,17 +232,25 @@ end for;
 
 //testing 
 I:=identity(n,P);
-t_b:=JouxAction_NEW(I,I,I); //check if def of tb is right ? 
-"t_b";
-t_b;
-"result of star";
-pk:=star(A,B,C,t_b); // it works!!!!
-pk;
-"result of GACE";
+"t_0";
+t_0:=JouxAction_NEW(I,I,I,0); 
+t_0;
+"t_1";
+t_1:=JouxAction_NEW(I,I,I,1);
+t_1;
+GACE(I,I,I,1); //everything works fine 
+"result of star, b=0";
+pk_0:=star(A,B,C,t_0); // it works!!!!
+pk_0;
+"result of star, b=1";
+pk_1:=star(A,B,C,t_1);
+pk_1;
+"result of GACE, b=0";
 GACE(A,B,C,0);
-"result of Joux Action on tb";
-JouxAction(A,B,C); 
-
+"result of GACE, b=1";
+GACE(A,B,C,1);
+//"result of Joux Action on tb";
+//JouxAction(A,B,C); 
 
 distinguisher := function(pk,M)
 //assume we are given an invariant matrix M for b=0
@@ -250,10 +258,11 @@ distinguisher := function(pk,M)
 "pk";
 pk;
 out:=star(M,M,M,pk);
-"out";
-out;
-//return out eq pk; //not quite the same but some interesting symmetries... 
+"action of M on pk";
+//out;
+return out; //not quite the same but some interesting symmetries... 
 end function; 
 
 M:=Matrix(2,2,[P!0,P!1,P!1,P!0]);
-distinguisher(pk,M)
+distinguisher(pk_0,M);
+distinguisher(pk_1,M);
