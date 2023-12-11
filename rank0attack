@@ -102,7 +102,7 @@ Commitment := function(A,B,C,b)
 	return lst; // returns a n list of nxn matrices representing the output of the action 
 end function;
 
-// rank 0 attack starts here ----------------------------------------------------------------------
+// ---------------------- rank 0 attack with built-in magma fn ----------------------------------------------------------------------
 RankAttack := function(pk)
 	poly<[AA]> := PolynomialRing(F, n); // define variables to be solved
 	M := ZeroMatrix(F,n); // initialize matrix to store equations
@@ -117,8 +117,29 @@ RankAttack := function(pk)
 	return 1; // if there are solutions, pk had rank n-1 so b=1
 end function;
 
+// ---------------------- rank 0 attack that finds solutions ------------------
+RankAttack2 := function(pk)
+	poly<[AA]> := PolynomialRing(F, n); // define variables to be solved
+	M := ZeroMatrix(F,n); // initialize matrix to store equations
+	for i in [1..n] do 
+		M := M + AA[i]*pk[i]; // compute set of equations: a1 G1 + ... an Gn
+	end for;
+	eqns := [];
+	for i in [1..n] do 
+		eqns := eqns cat [M[i][j] : j in [1..n]]; // place all equations into list
+	end for;
+	I := Ideal(eqns);
+	K := Variety(I);
+	dim := #K;
+	//dim := #(Basis(K)); // count number of solutions
+	if dim eq 1 then // if only zero solution, then pk had rank n so b=0
+		return 0;
+	end if;
+	return 1; // if there are non-zero solutions, pk had rank n-1 so b=1
+end function;
+
 A,B,C,b := keygen();
 pk := Commitment(A,B,C,b);
 time b1 := RankAttack(pk);
-b eq b1;
-
+time b2 := RankAttack2(pk);
+b1 eq b2;
