@@ -8,7 +8,8 @@ BuildSupportMinors := function(M,r)
 end function;
 
 // given a list L of n square t x t matrices, compute the lin. comb. of matrices whose rank is leq r
-ComputeMinRank := function(L,r)
+ComputeMinRank := function(L)
+	r := 1; // we only care about having target rank 1
 
 	// set up the instance of minrank -------------
 	n := #L; // number of matrices
@@ -30,6 +31,7 @@ ComputeMinRank := function(L,r)
 			eqns := eqns cat [temp];
 		end for;
 	end for;
+	eqns := eqns cat [X[n]-1]; // force last coordinate to be 1
 	// solve the equations we've gathered
 	I := Ideal(eqns);
 	sol := Variety(I);
