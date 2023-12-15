@@ -51,5 +51,5 @@ end function;
 
 L := MakeList(2,GF(5));
 L;
-ComputeMinRank(L,1);
+ComputeMinRank(L);
 
