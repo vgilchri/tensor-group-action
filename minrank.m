@@ -110,7 +110,28 @@ MakeList := function(t,F)
 	return L;
 end function;
 
+
+CheckSol:= function(sol, L)
+//given a list of L matrixes and coeffs in sol check whether rank of sum(x_i)L_i is <=1 
+	n := #L; // number of matrices
+	t := #Rows(L[1]); // dim of matrices in L
+	sum:=ZeroMatrix(F,t,t);
+		for i in [1..n] do
+			sum:=sum+sol[i]*L[i];
+			sum;
+		end for;
+	return Rank(sum);
+end function;
+
 L := MakeList(2,GF(5));
 L;
-ComputeMinRank(L);
+sols:=ComputeMinRank(L);
+
+m:=#sols;
+for i in [1..m] do 
+    CheckSol(sols[m],pk);
+end for;
+
+//using CheckSol we observe that we sometimes get rank 2 stuff :( )
+// for n=2, q=7 always get 13,19,49 or 91 sols
 
