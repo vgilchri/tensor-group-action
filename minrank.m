@@ -2,6 +2,64 @@ clear;
 
 // magma code for the minrank computation from https://arxiv.org/pdf/2002.08322
 
+// Utility functions ----------------
+
+
+Decompose:=function(M,r) //TODO--------------------------------
+//decompose M as M=SC, S is nxr and C is rxm
+//S is a basis for the column space 
+//C has full rank r
+end function;
+
+MakeCdash := function(M,C,j) // build C_j' by adding the jth row of M as1st row and then C below
+    rj:=M[j]; //select jth row of M
+    Cdash:=VerticalJoin(rj,C);// rj is placed on top of C
+    return Cdash;
+end function; //checked 
+
+MakeSubsets := function(n,r) // creates all possible subsets of size n-r of n 
+    T := Subsets( {1 .. n}, n-r);
+    return SetToSequence(T); // !!! returns a seq that contains sets 
+end function; 
+
+MakeSubmatrix:=function(M,T,r) // given a matrix M and a subset of indices T, remove all the columns for indices contained in T
+    //seq_col:=SetToSequence(T);
+    seq_col:=T;
+    seq_row:=[i : i in [1..r]];
+    A:=Submatrix(M,seq_row,seq_col);
+return A;
+end function;
+
+//functions below need to be checked--------------------------------------------------
+CofactorExp:=function(Cdash,C,T)//computes cofactor expansion with respect to 1st row 
+    seq:=SetToSequence(T);
+    temp:=0;
+    for m in seq do 
+        A:=MakeSubmatrix(C,T,3);
+        temp:=temp+(-1)^(1+m)*C[1,m]*Determinant(RemoveColumn(A,m)); 
+    end for;
+end function;
+
+BuildSupportMinors := function(M,r) // given a matrix,M, and a target rank, r, create the alg equations from support minors
+    //construct S,C 
+    S,C:=Decompose(M)
+    //create empty seq for equations 
+    eqns:=[]
+    //build C_j and express each max minor
+    T=MakeSubsets(n,r)
+    for j in [1..n] do
+        Cdash:=MakeCdash(M,C,j); //for each j buil C_j
+        for el in T do //for each possible maximal minor of C_j compute Cofactor expansion
+            eqns cat:=[CofactorExp(Cdash,C,el)]    
+        end for;
+    end for;
+    return eqns
+end function;
+
+//-------------------------------------------------
+
+
+
 // given a matrix,M, and a target rank, r, create the alg equations from support minors
 BuildSupportMinors := function(M,r)
 
