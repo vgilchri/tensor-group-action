@@ -73,8 +73,8 @@ ComputeMinRank := function(L)
 	n := #L; // number of matrices
 	t := #Rows(L[1]); // dim of matrices in L
 	F := Parent(L[1][1][1]); // determine base field
-	P<[X]> := PolynomialRing(F,n+t); // create polynomial ring with variables x_i, but also the c_T
-									 // x_i will be first n vars, and the c_T will be the remaining t of them
+	P<[X]> := PolynomialRing(F,n+t); // create polynomial ring with variables x_i (=X[1..n]), but also the c_T (=X[n+1..n+t])
+
 	M := ZeroMatrix(F,t); // create a matrix storing the desired lin. comb. in terms of the new variables, i.e. x1 M1 + ...xn Mn
 	for i in [1..n] do 
 		M := M + X[i]*L[i];
@@ -83,10 +83,13 @@ ComputeMinRank := function(L)
 	// compute equations to be solved using support minors --------
 	eqns := []; // store here the equations we build
 	for i in [1..t] do // for each row in M
-		temp := 0;
-		for j in [1..t] do // for each element in that row
-			temp := temp + M[i][j]*X[j+n]*(-1)^(j); // determinant should be zero
-			eqns := eqns cat [temp];
+		for j in [1..t] do 
+			for k in [1..t] do
+				if j lt k then // get all n choose 2 combinations of rows
+					temp := M[i][j]*X[k+n] - M[i][k]*X[j+n]; // determinant should be zero
+					eqns := eqns cat [temp];
+				end if;
+			end for;
 		end for;
 	end for;
 	eqns := eqns cat [X[n]-1]; // force last coordinate to be 1
