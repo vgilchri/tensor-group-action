@@ -82,12 +82,85 @@ Example := function()
 	return check;
 end function;
 
-// run test 100 times, print what percent were correct
-success := 0;
-for i in [1..100] do 
-	x := Example();
-	if x eq true then 
-		success := success + 1;
-	end if;
+star := function(A,B,C,X)
+// performs the general group action (A,B,C)*X
+//Assume X is represented using our tensor product representation as above. 
+sum:=0;
+lst:=[**];
+for l in [1..n] do
+    mat:=identity(n,Parent(A[1][1]));
+	//ei := Matrix(n,1,basis[i]);
+        for m in [1..n] do
+        //ej := Matrix(n,1,basis[j]);
+            for r in [1..n] do
+                sum:=0;
+                for i in [1..n] do
+                    el:=X[i];
+                    for j in [1..n] do
+                        for k in [1..n] do
+                            coeff:=el[j][k]*A[l][i]*B[m][j]*C[r][k];
+                            sum:=sum+coeff;
+                        end for;
+                    end for;
+                end for;
+            mat[m][r]:=sum;
+            end for;
+        end for;
+    el:=[*mat*];
+        //"matrix in a list";
+       // el;
+    lst:=lst cat el; 
 end for;
-success;
+return lst;      
+end function;
+
+A,B,C,b := keygen();
+L := Commitment(A,B,C,0);
+//L := MakeList(2,GF(5));
+
+// given a public key (tensor) L, find A,B,C such that (A,B,C) star t_0 = L
+CompAttack  := function(L)
+	pts:=ComputeMinRank(L);
+	if #pts lt n then // check there are enough rank 1 points
+		return "error: not enough rank 1 points. try again.";
+	end if;
+	lst := [];
+	for i in [1..n] do // with rank 1 points, build a matrix
+		lst := lst cat [pts[i][j]:j in [1..n]];
+	end for;
+	//A := Transpose(Matrix(n,n,lst)); // ? do we want the points as rows or columns ?
+	A := Matrix(n,n,lst);
+	// poly ring
+	R<[X]> := PolynomialRing(F,2*n^2); // vars for B1 and C1-inv
+	// (I,B1,I) star (A1,I,I) star t_0
+	I1 := identity(n,R); // make id matrix
+	f1 := Commitment(A,I1,I1,0);
+	B1 := Matrix(n,n,[X[i]:i in [1..n^2]]);
+	LHS := star(I1,B1,I1,f1);
+	//LHS := Commitment(A1,B1,I1,0);
+	// (I,I,C1^inv) star L
+	D1 := Matrix(n,n,[X[i]:i in [n^2+1..2*n^2]]);
+	RHS := star(I1,I1,D1,L);
+	// solve vars
+	eqns := [];
+	for i in [1..n] do // make equations by subtracting tensors
+		for j in [1..n] do 
+			for k in [1..n] do 
+				eqns := eqns cat [LHS[i][j][k] - RHS[i][j][k]];
+			end for;
+		end for;
+	end for;
+	I := Ideal(eqns); // solve equations (should be linear) with Groebner basis
+	sols := Variety(I);
+	B := Matrix(n,n,[sols[1][i]:i in [1..n^2]]);
+	C := Matrix(n,n,[sols[1][i]:i in [n^2+1..2*n^2]]);
+	return A,B,C;
+end function;
+
+CompAttack(L);
+
+// problems: 
+// -> MinRank works for small parameters, but times out for big ones
+// -> the attack is not working, always gives 0 solutions for B, C
+// -> also the A it recovers using MinRank seems to not work...
+//    I get that Commitment(A,I,I,0) != Commitment(A1,I,I,0)
