@@ -161,6 +161,6 @@ CompAttack(L);
 
 // problems: 
 // -> MinRank works for small parameters, but times out for big ones
-// -> the attack is not working, always gives 0 solutions for B, C
+// -> the attack is not working, always gives 0 solutions for B, C -- LM : maybe we should enforce det\neq 0 again
 // -> also the A it recovers using MinRank seems to not work...
 //    I get that Commitment(A,I,I,0) != Commitment(A1,I,I,0)
