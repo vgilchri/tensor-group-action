@@ -74,7 +74,7 @@ Commitment := function(A,B,C,b)
     lst:=[**]; // empty list 
 	for i in [1..n] do
 	//ei := Matrix(n,1,basis[i]);
-        mat:=identity(n,F);
+        mat:=identity(n,Parent(A[1][1]));
         for j in [1..n] do
         //ej := Matrix(n,1,basis[j]);
             for k in [1..n] do
