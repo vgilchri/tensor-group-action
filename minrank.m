@@ -29,7 +29,7 @@ ComputeMinRank := function(L)
 		for j in [1..n-1] do // choose the first column
 			for k in [j+1..n] do // choose the second column
 				temp := M[i][j]*X[k+n] - M[i][k]*X[j+n]; // determinant should be zero
-				eqns := eqns cat [temp];
+				eqns cat:= [temp];
 			end for;
 		end for;
 	end for;
@@ -42,6 +42,7 @@ ComputeMinRank := function(L)
 	// check if not enough solutions, if so, consider new normalizing factors
 	t := 1;
 	norm_pt := [X[n],X[n-1]-1];
+	norm_pt cat norm_cofacs;
 	while #points lt n and t lt n do 
 		norm_pt := norm_pt[1..#norm_pt-1] cat [X[n-t+1],X[n-t]-1]; // remove previous normalizing factor and add new zero
 		r := 1;
@@ -50,8 +51,10 @@ ComputeMinRank := function(L)
 			I := Ideal(eqns cat norm_cofacs cat norm_pt);
 			sol := Variety(I:Al := "KellerGehrig");
 			points cat:= sol;
+			sol;
 			norm_cofacs := norm_cofacs[1..#norm_cofacs-1] cat [X[n+r],X[n+r+1]-1]; // remove previous normalizing factor and add new zero
 			r +:= 1;
+			norm_pt cat norm_cofacs;
 		end while;
 		I := Ideal(eqns cat norm_cofacs cat norm_pt);
 		sol := Variety(I:Al := "KellerGehrig");
@@ -61,6 +64,37 @@ ComputeMinRank := function(L)
 		points cat:= sol;
 		t +:= 1;
 	end while;
+	return points;
+end function;
+
+ComputeMinRank2 := function(L)
+	r := 1; // we only care about having target rank 1
+
+	// set up the instance of minrank -------------
+	n := #L; // number of matrices and dim of each matrix
+	F := Parent(L[1][1][1]); // determine base field
+	P<[X]> := PolynomialRing(F,2*n); // create polynomial ring with variables x_i (=X[1..n]), but also the c_T (=X[n+1..n+t])
+
+	M := ZeroMatrix(F,n); // create a matrix storing the desired lin. comb. in terms of the new variables, i.e. M = x1 M1 + ...xn Mn
+	for i in [1..n] do 
+		M := M + X[i]*L[i];
+	end for;
+
+	// compute equations to be solved using support minors --------
+	eqns := []; // store here the equations we build
+	for i in [1..n] do // for each row in M
+		for j in [1..n-1] do // choose the first column
+			for k in [j+1..n] do // choose the second column
+				temp := M[i][j]*X[k+n] - M[i][k]*X[j+n]; // determinant should be zero
+				eqns cat:= [temp];
+			end for;
+		end for;
+	end for;
+	eqns cat:= [X[n]*(X[n]-1),X[n+1]*(X[n+1]-1)];
+	I := Ideal(eqns);
+	sol := Variety(I:Al := "KellerGehrig"); // Wiedemann won't work, so we use a similar algo instead
+	points := sol;
+	
 	return points;
 end function;
 
@@ -131,8 +165,8 @@ NameVars := function()
 end function;
 
 // given a public key (tensor) L, find A,B,C such that (A,B,C) star t_0 = L
-CompAttack  := function(L)
-	pts:=ComputeMinRank(L);
+CompAttack  := function(L,pts)
+	//pts:=ComputeMinRank(L);
 	if #pts lt n then // check there are enough rank 1 points
 		return "error: not enough rank 1 points. try again.";
 	end if;
@@ -141,7 +175,7 @@ CompAttack  := function(L)
 	AssignNames(~R,vars);
 	lst := [];
 	for i in [1..n] do // with rank 1 points, build a matrix
-		lst := lst cat [pts[i][j]*X[2*n^2+j]:j in [1..n]]; //
+		lst cat:= [pts[i][j]*X[2*n^2+i]:j in [1..n]]; //
 	end for;
 	A := Transpose(Matrix(n,n,lst)); //
 	//A := Matrix(n,n,lst);
@@ -179,7 +213,7 @@ CheckAllSols := function(sols,pts,L) // checks solutions for CompAttack();
 		return false;
 	end if;
 	for s in [1..#sols] do 
-		lst1:=[pts[i][j]*sols[s][2*n^2+j]:i,j in [1..n]]; // apply scalars found to A
+		lst1:=[pts[i][j]*sols[s][2*n^2+i]:i,j in [1..n]]; // apply scalars found to A
 		A := Transpose(Matrix(n,n,lst1));
 		B := Matrix(n,n,[sols[s][i]:i in [1..n^2]]);
 		C := Matrix(n,n,[sols[s][i]:i in [n^2+1..2*n^2]]);
@@ -194,32 +228,45 @@ CheckAllSols := function(sols,pts,L) // checks solutions for CompAttack();
 	return false;
 end function;
 
+CleanMinRank := function(pts)
+	sols := [];
+	zero := [0:i in [1..n]];
+	for i in [1..#pts] do 
+		point := [pts[i][j]:j in [1..n]];
+		if point ne zero and not (point in sols) then 
+			mults := [[point[i]*s:i in [1..#point]]:s in [1..q]];
+			check := true;
+			for m in mults do 
+				if m in sols then 
+					check := false;
+				end if;
+			end for;
+			if check eq true then 
+				sols cat:= [point];
+			end if;
+		end if;
+	end for;
+	return sols;
+end function;
 
-
+// for n = 2 case
 I := identity(n,GF(q));
 t0 := Commitment(I,I,I,0);
-ComputeMinRank(t0);
-
-
-
-
-//T := 0;
-//F := 0;
-//for i in [1..100] do 
-//	A,B,C,b := keygen();
-//	L := Commitment(A,B,C,0); // compute pk
-//	sols := CompAttack(L); // compute attack
-//	pts := ComputeMinRank(L); // compute minrank for checking
-//	#pts;
-//	if #pts gt n-1 then // if enough rank 1 points for attack
-//		c := CheckAllSols(sols,pts,L); // check if any of recovered solutions work
-//		if c eq true then 
-//			T +:= 1;
-//		else 
-//			F +:=1;
-//		end if;
-//	end if;
-//end for;
-//"true: "; T; "false: "; F;
-
-
+s := ComputeMinRank2(t0);
+s1 := CleanMinRank(s);
+#s1;
+A,B,C,b := keygen();
+L := Commitment(A,B,C,0); // compute pk
+pts := ComputeMinRank2(L); // compute minrank for checking
+pts := CleanMinRank(pts);
+for i in [1..#pts-1] do 
+	for j in [i..#pts] do 
+		sol := [pts[i],pts[j]];
+		sols := CompAttack(L,sol); // compute attack
+		if CheckAllSols(sols,sol,L) then 
+			true;
+			i,j;
+			break;
+		end if;
+	end for;
+end for;
