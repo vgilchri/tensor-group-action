@@ -135,44 +135,10 @@ CompAttack  := function(L,pts)
 	RHS := star(A,I,D,L); // (A^inv,I,C^inv) star L
 	// make equations for Grobner basis
 	eqns := [LHS[i][j][k] - RHS[i][j][k]:i,j,k in [1..n]];
-	eqns cat:= [Determinant(D)-1,X[1]-1]; // normalize determinant of D, and first entry of B
+	norm_row := [X[i]-1:i in [1..n-1]];
+	eqns := eqns cat [Determinant(D)-1] cat norm_row; // normalize determinant of D, and first row of B
 	I := Ideal(eqns); // solve equations with Groebner basis
 	sols := Variety(I: Al := "Wiedemann");
-	return sols;
-end function;
-
-CompAttack2  := function(L,pts)
-	//pts:=ComputeMinRank(L);
-	if #pts lt n then // check there are enough rank 1 points
-		return "error: not enough rank 1 points. try again.";
-	end if;
-	R<[X]> := PolynomialRing(F,2*n^2); // vars for B1 and C1-inv
-	// vars := NameVars(); // rename the variables in the polynomial ring to make it easier to read when printing
-	// AssignNames(~R,vars);
-	lst := [R!pts[i][j]:i,j in [1..n]]; //
-	A := (Matrix(n,n,lst)); // A^-1 built using rank1 points
-	I := identity(n,R); // make id matrix
-	B := Matrix(n,n,[X[i]:i in [1..n^2]]); // build B using variables
-	LHS := Commitment(I,B,I,0); // LHS = (I,B,I) \star t_0
-	D := Matrix(n,n,[X[i]:i in [n^2+1..2*n^2]]); // C^-1
-	RHS := star(A,I,D,L); // (A^inv,I,C^inv) star L
-	// make equations for Grobner basis
-	eqns := [LHS[i][j][k] - RHS[i][j][k]:i,j,k in [1..n]];
-	lst := [];
-	for i in [1..n^3] do 
-		terms := [];
-		for j in [1..2*n^2] do 
-			coef := Coefficients(eqns[i],j);
-			if #coef eq 1 then 
-				terms cat:= [R!0];
-			else
-				terms cat:= [R!coef[2]];
-			end if;
-		end for;
-		lst cat:= terms;
-	end for;
-	M := Matrix(n^3,2*n^2,lst);
-	sols := Kernel(M);
 	return sols;
 end function;
 
@@ -202,16 +168,24 @@ end function;
 
 I := identity(n,GF(q));
 check := true;
-for i in [1..1] do 
+T := 0; F := 0;
+for i in [1..10] do 
 	A,B,C,b := keygen();
 	L := Commitment(A,B,C,0); // compute pk
 	pts := ComputeMinRank(L); // compute minrank to find rank1 points
 	if #pts eq n then 
 		time sols := CompAttack(L,pts);
-		#sols;
-		check := check and CheckAllSols(sols,pts,L);
+		c := CheckAllSols(sols,pts,L);
+		if c then 
+			T +:= 1;
+		else
+			F +:= 1;
+		end if;
+		check := check and c;
 	else
 		"error : not enough rank1 points to run attack";
 	end if;
 end for;
-check;
+"corrrect ", T;
+"incorrect ", F;
+
