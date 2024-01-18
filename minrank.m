@@ -3,11 +3,9 @@ clear;
 load "rank0attack.m";
 
 // magma code for the minrank computation from https://arxiv.org/pdf/2002.08322
+// and our computational attack
 
-
-//-------------------------------------------------
-
-
+// ----------------------- MIN RANK ---------------------------------------
 // given a list L of n square t x t matrices, compute the lin. comb. of matrices whose rank is leq r
 // with current normalizing steps, we do not get all of the solutions every time
 ComputeMinRank := function(L)
@@ -117,6 +115,8 @@ NameVars := function()
 	return vars;
 end function;
 
+// ----------------------------- COMPUTATIONAL ATTACK ------------------------------------
+
 // given a public key (tensor), L, and rank1 points of L, pts, find A,B,C such that (A,B,C) star t_0 = L
 CompAttack  := function(L,pts)
 	//pts:=ComputeMinRank(L);
@@ -170,22 +170,19 @@ I := identity(n,GF(q));
 check := true;
 T := 0; F := 0;
 for i in [1..10] do 
-	A,B,C,b := keygen();
+	A,B,C,b := keygen(); // compute sk
 	L := Commitment(A,B,C,0); // compute pk
 	pts := ComputeMinRank(L); // compute minrank to find rank1 points
-	if #pts eq n then 
-		time sols := CompAttack(L,pts);
-		c := CheckAllSols(sols,pts,L);
+	if #pts eq n then // make sure there's enough rank1 points
+		time sols := CompAttack(L,pts); // run attack
+		c := CheckAllSols(sols,pts,L); // check correctness
 		if c then 
 			T +:= 1;
 		else
 			F +:= 1;
 		end if;
-		check := check and c;
-	else
-		"error : not enough rank1 points to run attack";
+		check := check and c; // keep running check of correctness
 	end if;
 end for;
 "corrrect ", T;
 "incorrect ", F;
-
