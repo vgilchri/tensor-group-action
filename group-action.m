@@ -63,8 +63,8 @@ end function;
 
 InvMatrix := function(n) // computes a random invertible matrix
 	A := Matrix(n,n,[Random(F):i in [1..n^2]]);
-	Z := Parent(M[1][1]);
-	while Z!Determinant(M) eq 0 do 
+	Z := Parent(A[1][1]);
+	while Z!Determinant(A) eq 0 do 
 		A := Matrix(n,n,[Random(F):i in [1..n^2]]);
 	end while;
 	return A;
