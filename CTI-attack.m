@@ -50,20 +50,6 @@ ComputeMinRank := function(L)
 	return points;
 end function;
 
-
-// determine whether result from minrank gives a matrix of appropriate rank
-CheckSol := function(sol, L)
-//given a list of L matrixes and coeffs in sol check whether rank of sum(x_i)L_i is <=1 
-	n := #L; // number of matrices
-	t := #Rows(L[1]); // dim of matrices in L
-	F := Parent(L[1][1][1]);
-	sum:=ZeroMatrix(F,t,t);
-		for i in [1..n] do
-			sum:=sum+sol[i]*L[i];
-		end for;
-	return Rank(sum);
-end function;
-
 // ----------------------------- COMPUTATIONAL ATTACK (on CTI variant) ------------------------------------
 
 // given a public key (tensor), L, and rank1 points of L, pts, find A,B,C such that (A,B,C) star t_0 = L
@@ -90,7 +76,7 @@ CompAttack  := function(L,pts)
 	return sols;
 end function;
 
-CheckAllSols := function(sols,pts,L) // checks solutions for CompAttack();
+CheckCorrectness := function(sols,pts,L) // checks solutions for CompAttack();
 	if #pts lt n then 
 		"not enough rank 1 points";
 		return false;
@@ -125,17 +111,12 @@ CheckAllSols := function(sols,pts,L) // checks solutions for CompAttack();
 end function;
 
 
-I := identity(n,GF(q));
-check := true;
-for i in [1..10] do 
-	A,B,C,b := keygen(); // compute sk
-	L := Commitment(A,B,C,0); // compute pk
-	 pts := ComputeMinRank(L); // compute minrank to find rank1 points
-	if #pts eq n then // make sure there's enough rank1 points
-		"attack time";
-		time sols := CompAttack(L,pts); // run attack
-		"sols"; #sols;
-		 c := CheckAllSols(sols,pts,L); // check correctness
-		check := check and c; // keep running check of correctness
-	end if;
-end for;
+A,B,C,b := keygen(); // compute sk
+L := Commitment(A,B,C,0); // compute pk
+pts := ComputeMinRank(L); // compute minrank to find rank1 points
+if #pts eq n then // make sure there's enough rank1 points
+	"attack time";
+	time sols := CompAttack(L,pts); // run attack
+	"sols"; #sols;
+	c := CheckCorrectness(sols,pts,L); // check correctness	
+end if;
