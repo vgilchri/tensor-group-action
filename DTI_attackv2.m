@@ -9,7 +9,8 @@ RankAttack:=function(pk);
 u:= RandomMatrix(F,1,n); // sample a random point 
 M:=ZeroMatrix(F,n);
 for i in [1..n] do 
-    M:=u[1][i]*pk[i];
+    M1:=u[1][i]*pk[i];
+    M+:=M1;
 end for;
 r:=Rank(M); // check the resulting rank 
 if r eq n then 
