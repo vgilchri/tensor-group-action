@@ -3,10 +3,10 @@ clear;
 load "group-action.m";
 
 // magma code for the minrank computation from https://arxiv.org/pdf/2002.08322
-// and our computational attack on CTI variant
+// and a computational attack on CTI variant from https://eprint.iacr.org/2023/723
 
 // ----------------------- MIN RANK ---------------------------------------
-// given a list L of n square t x t matrices, compute the lin. comb. of matrices whose rank is leq r
+// given a list L of n square t x t matrices, compute the lin. comb. of matrices whose rank is \leq r
 // with current normalizing steps, we do not get all of the solutions every time
 ComputeMinRank := function(L)
 	r := 1; // we only care about having target rank 1
@@ -52,11 +52,11 @@ end function;
 
 // ----------------------------- COMPUTATIONAL ATTACK (on CTI variant) ------------------------------------
 
-// given a public key (tensor), L, and rank1 points of L, pts, find A,B,C such that (A,B,C) star t_0 = L
-CompAttack  := function(L,pts)
-	pts:=ComputeMinRank(L);
-	if #pts lt n then // check there are enough rank 1 points
-		return "error: not enough rank 1 points. try again.";
+// given a public key (tensor), L, find A,B,C such that (A,B,C) \star t_0 = L
+CompAttack  := function(L)
+	pts:=ComputeMinRank(L); // rank 1 points of L
+	if #pts lt n then // sanity check that there are enough rank 1 points
+		return "error: not enough rank 1 points.";
 	end if;
 	R<[X]> := PolynomialRing(F,2*n^2); // vars for B1 and C1-inv
 	lst := [R!pts[i][j]:i,j in [1..n]]; //
@@ -64,14 +64,13 @@ CompAttack  := function(L,pts)
 	I := identity(n,R); // make id matrix
 	B := Matrix(n,n,[X[i]:i in [1..n^2]]); // build B using variables
 	LHS := Commitment(I,B,I,0); // LHS = (I,B,I) \star t_0
-	D := Matrix(n,n,[X[i]:i in [n^2+1..2*n^2]]); // C^-1
+	D := Matrix(n,n,[X[i]:i in [n^2+1..2*n^2]]); // build C^-1 using poly. ring variables
 	RHS := star(A,I,D,L); // (A^inv,I,C^inv) star L
 	// make equations for Grobner basis
 	eqns := [LHS[i][j][k] - RHS[i][j][k]:i,j,k in [1..n]];
 	norm_row := [X[i]-1:i in [1..n-1]];
-	//time det := Determinant(D);cat [det-1]
-	eqns := eqns cat [X[2*n^2-1]-1] cat norm_row; // normalize determinant of D, and first row of B
-	I := Ideal(eqns); // solve equations with Groebner basis
+	eqns := eqns cat [X[2*n^2-1]-1] cat norm_row; // normalize first row of B and one entry in C-inv
+	I := Ideal(eqns); // solve equations
 	sols := Variety(I: Al := "Wiedemann");
 	return sols;
 end function;
@@ -81,7 +80,6 @@ CheckCorrectness := function(sols,pts,L) // checks solutions for CompAttack();
 		"not enough rank 1 points";
 		return false;
 	end if;
-	// R := Parent(L[1][1][1]);
 	valid := 0;
 	check := false;
 	for s in [1..#sols] do 
@@ -89,7 +87,7 @@ CheckCorrectness := function(sols,pts,L) // checks solutions for CompAttack();
 		A := (Matrix(n,n,lst1));
 		B := Matrix(n,n,[sols[s][i]:i in [1..n^2]]); // build matrices from solution
 		D := Matrix(n,n,[sols[s][i]:i in [n^2+1..2*n^2]]);
-		// most solutions do not correspond to invertible matrices
+		// check that solutions correspond to invertible matrices
 		if Determinant(A) ne 0 and Determinant(B) ne 0 and Determinant(D) ne 0 then
 			C := D^-1;
 			A1 := A^-1;
@@ -98,15 +96,8 @@ CheckCorrectness := function(sols,pts,L) // checks solutions for CompAttack();
 				valid +:=1;
 				check := true;
 			end if;
-		// else
-		// 	I := identity(n,R); // make id matrix
-		// 	LHS := Commitment(I,B,I,0);
-		// 	"LHS";LHS;
-		// 	RHS := star(A,I,D,L);
-		// 	"RHS";RHS;
 		end if;
 	end for;
-	// valid;
 	return check;
 end function;
 
@@ -116,7 +107,7 @@ L := Commitment(A,B,C,0); // compute pk
 pts := ComputeMinRank(L); // compute minrank to find rank1 points
 if #pts eq n then // make sure there's enough rank1 points
 	"attack time";
-	time sols := CompAttack(L,pts); // run attack
+	time sols := CompAttack(L); // run attack
 	"sols"; #sols;
 	c := CheckCorrectness(sols,pts,L); // check correctness	
 end if;
