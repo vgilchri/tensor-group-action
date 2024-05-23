@@ -12,8 +12,9 @@ RankAttack := function(pk)
 	for i in [1..n] do 
 		M := M + AA[i]*pk[i]; // compute set of equations: a1 G1 + ... an Gn
 	end for;
-	K := Kernel(M); // compute kernel of above matrix
-	dim := #(Basis(K)); // count number of solutions
+ 	eqs := [M[i][j]:i,j in [1..n]] cat [AA[1]-1];
+	K := Variety(Ideal(eqs)); // compute kernel of above matrix
+	dim := #K; // count number of solutions
 	if dim eq 0 then // if no solutions, then pk had rank n so b=0
 		return 0;
 	end if;
